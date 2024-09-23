@@ -1,11 +1,12 @@
 package com.example.praktikumpapb
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -13,10 +14,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
@@ -28,12 +34,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.praktikumpapb.ui.theme.PraktikumPAPBTheme
 
@@ -43,7 +49,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PraktikumPAPBTheme {
-                CatScreen()
+                NameAndNimScreen()
             }
         }
     }
@@ -51,12 +57,14 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CatScreen() {
-    val isDarkTheme = isSystemInDarkTheme()
-    var catName by remember { mutableStateOf("") }
-    var isCatRegistered by remember { mutableStateOf(false) }
+fun NameAndNimScreen() {
+    var name by remember { mutableStateOf("") }
     var submittedNim by remember { mutableStateOf("") }
     var nim by remember { mutableStateOf("") }
+    val context = LocalContext.current
+
+    // Button enabled state based on validation
+    val isFormValid = name.isNotEmpty() && nim.length == 15
 
     Scaffold(
         topBar = {
@@ -66,7 +74,7 @@ fun CatScreen() {
                     titleContentColor = MaterialTheme.colorScheme.primary,
                 ),
                 title = {
-                    Text("Name your cat!")
+                    Text("Enter Name and NIM")
                 }
             )
         },
@@ -78,64 +86,52 @@ fun CatScreen() {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (catName.isNotEmpty()) {
-                Text(
-                    text = "Meow! My name is $catName",
-                    style = MaterialTheme.typography.headlineMedium,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-            } else {
-                Text(
-                    text = "Meow!",
-                    style = MaterialTheme.typography.headlineMedium,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Image(
-                painter = painterResource(id = R.drawable.cat),
-                contentDescription = "Cat Image",
-                modifier = Modifier.height(250.dp),
-                contentScale = ContentScale.Fit,
-                colorFilter = if (isDarkTheme) {
-                    ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
-                } else null
+            NameField(
+                icon = Icons.Filled.Person,
+                onNameChanged = { newName -> name = newName }
             )
+
             Spacer(modifier = Modifier.height(16.dp))
-            NameField { newName ->
-                catName = newName
-            }
 
-            if (isCatRegistered) {
-                TextField(
-                    value = nim,
-                    onValueChange = {
-                        if (it.all { char -> char.isDigit() }) {
-                            nim = it
-                        }
-                    },
-                    label = { Text("Enter NIM") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
+            NimField(
+                icon = Icons.Filled.Info,
+                nim = nim,
+                onNimChanged = { if (it.all { char -> char.isDigit() }) nim = it }
+            )
 
-                Text("Submitted NIM: $submittedNim")
-            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text("Submitted NIM: $submittedNim")
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Preview Button
             Button(
                 onClick = {
-                    isCatRegistered = true
-                    submittedNim = nim },
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text("Register Cat")
+                    Toast.makeText(context, "Preview - Name: $name, NIM: $nim", Toast.LENGTH_SHORT).show()
+                },
+                enabled = name.isNotEmpty() && nim.isNotEmpty(),
+                modifier = Modifier.padding(vertical = 8.dp)
+            ) {
+                Text("Preview")
+            }
+
+            // Submit Button
+            Button(
+                onClick = {
+                    submittedNim = nim
+                },
+                enabled = isFormValid,
+                modifier = Modifier.padding(vertical = 8.dp)
+            ) {
+                Text("Submit")
             }
         }
     }
 }
 
 @Composable
-fun NameField(onNameChanged: (String) -> Unit) {
+fun NameField(icon: ImageVector, onNameChanged: (String) -> Unit) {
     var name by remember { mutableStateOf("") }
 
     TextField(
@@ -144,7 +140,19 @@ fun NameField(onNameChanged: (String) -> Unit) {
             name = it
             onNameChanged(it)
         },
-        label = { Text("Enter your cat's name") }
+        label = { Text("Enter your name") },
+        leadingIcon = { Icon(imageVector = icon, contentDescription = "Name Icon") }
+    )
+}
+
+@Composable
+fun NimField(icon: ImageVector, nim: String, onNimChanged: (String) -> Unit) {
+    TextField(
+        value = nim,
+        onValueChange = onNimChanged,
+        label = { Text("Enter NIM (15 digits)") },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        leadingIcon = { Icon(imageVector = icon, contentDescription = "NIM Icon") }
     )
 }
 
@@ -152,6 +160,6 @@ fun NameField(onNameChanged: (String) -> Unit) {
 @Composable
 fun DefaultPreview() {
     PraktikumPAPBTheme {
-        CatScreen()
+        NameAndNimScreen()
     }
 }
