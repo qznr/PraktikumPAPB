@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun NameAndNimScreen() {
     var name by remember { mutableStateOf("") }
@@ -106,14 +106,22 @@ fun NameAndNimScreen() {
             Spacer(modifier = Modifier.height(8.dp))
 
             // Preview Button
-            Button(
-                onClick = {
-                    Toast.makeText(context, "Preview - Name: $name, NIM: $nim", Toast.LENGTH_SHORT).show()
-                },
-                enabled = name.isNotEmpty() && nim.isNotEmpty(),
-                modifier = Modifier.padding(vertical = 8.dp)
+            Surface(
+                modifier = Modifier
+                    .padding(vertical = 8.dp)
+                    .combinedClickable(
+                        onClick = { /* Do nothing on regular click */ },
+                        onLongClick = {
+                            Toast.makeText(context, "Preview - Name: $name, NIM: $nim", Toast.LENGTH_SHORT).show()
+                        }
+                    ),
+                color = MaterialTheme.colorScheme.primary
             ) {
-                Text("Preview")
+                Text(
+                    text = "Preview (Long Press)",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
             }
 
             // Submit Button

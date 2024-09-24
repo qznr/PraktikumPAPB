@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "415221575662",
+    "project_id": "papb-praktikum-51da4",
+    "storage_bucket": "papb-praktikum-51da4.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:415221575662:android:415084f562a8b939d168ff",
+        "android_client_info": {
+          "package_name": "com.example.praktikumpapb"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlG3zsawBMfyZkaogOIyaXZuP29BCADho"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
