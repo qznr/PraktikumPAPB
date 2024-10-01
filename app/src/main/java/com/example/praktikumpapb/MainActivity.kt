@@ -39,17 +39,24 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
+import android.content.Intent
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
+import android.util.Log
 import com.example.praktikumpapb.ui.theme.PraktikumPAPBTheme
 
 class MainActivity : ComponentActivity() {
+    private lateinit var auth: FirebaseAuth
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        auth = Firebase.auth
+
         enableEdgeToEdge()
         setContent {
             PraktikumPAPBTheme {
-                NameAndNimScreen()
+                NameAndNimScreen(auth)
             }
         }
     }
@@ -57,7 +64,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun NameAndNimScreen() {
+fun NameAndNimScreen(auth: FirebaseAuth) {
     var name by remember { mutableStateOf("") }
     var submittedNim by remember { mutableStateOf("") }
     var nim by remember { mutableStateOf("") }
@@ -127,13 +134,34 @@ fun NameAndNimScreen() {
             // Submit Button
             Button(
                 onClick = {
-                    submittedNim = nim
+                    if (name.isNotEmpty() && nim.length == 15) { // Validasi sederhana
+                        auth.signInWithEmailAndPassword(nim + "@student.ub.ac.id", nim)
+                            .addOnCompleteListener { task ->
+                                if (task.isSuccessful) {
+                                    // Sign in success, navigate to ListActivity
+                                    val intent = Intent(context, ListActivity::class.java)
+                                    context.startActivity(intent)
+                                } else {
+                                    // If sign in fails, display a message to the user.
+                                    Log.w("MainActivity", "signInWithEmail:failure", task.exception)
+                                    Toast.makeText(
+                                        context,
+                                        "Authentication failed.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                    } else {
+                        Toast.makeText(context, "Please enter valid name and NIM.", Toast.LENGTH_SHORT).show()
+                    }
+
                 },
                 enabled = isFormValid,
                 modifier = Modifier.padding(vertical = 8.dp)
             ) {
                 Text("Submit")
             }
+
         }
     }
 }
@@ -164,10 +192,10 @@ fun NimField(icon: ImageVector, nim: String, onNimChanged: (String) -> Unit) {
     )
 }
 
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    PraktikumPAPBTheme {
-        NameAndNimScreen()
-    }
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun DefaultPreview() {
+//    PraktikumPAPBTheme {
+//        NameAndNimScreen()
+//    }
+//}
