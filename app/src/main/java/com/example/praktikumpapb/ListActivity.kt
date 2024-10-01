@@ -23,8 +23,7 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.platform.LocalContext
-
+import com.example.praktikumpapb.entity.Matkul
 
 
 class ListActivity : ComponentActivity() {
