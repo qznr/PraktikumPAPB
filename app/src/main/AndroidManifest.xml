@@ -26,7 +26,13 @@
         <activity
             android:name=".ListActivity"
             android:exported="false"
-            android:label="List Activity" />
+            android:label="List Activity"
+            />
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="false"
+            android:label="Profile Activity"
+            />
     </application>
 
 </manifest>
