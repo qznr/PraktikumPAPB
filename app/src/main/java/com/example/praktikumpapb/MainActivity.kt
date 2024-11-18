@@ -6,12 +6,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
+//import androidx.compose.material.icons.rounded.*
+//import androidx.compose.material.icons.sharp.*
+//import androidx.compose.material.icons.twotone.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,7 +24,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import android.util.Log
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -66,17 +67,17 @@ fun MainScreen() {
     val navigationItems = listOf(
         NavigationItem(
             title = "Matkul",
-            icon = Icons.Default.Info,
+            icon = Icons.Outlined.School,
             screen = Screen.Matkul
         ),
         NavigationItem(
             title = "Tugas",
-            icon = Icons.Default.Favorite,
+            icon = Icons.Outlined.Assignment,
             screen = Screen.Tugas,
         ),
         NavigationItem(
             title = "Profile",
-            icon = Icons.Default.Person,
+            icon = Icons.Outlined.AccountCircle,
             screen = Screen.Profile
         )
     )
@@ -125,22 +126,11 @@ fun BottomNavigationBar(
 @Composable
 fun NameAndNimScreen(auth: FirebaseAuth, onLoginSuccess: () -> Unit) {
     var name by remember { mutableStateOf("") }
-    var nim by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     val context = LocalContext.current
-    val isFormValid = name.isNotEmpty() && nim.length == 6
+    val isFormValid = name.isNotEmpty() && password.length == 6
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                colors = topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
-                ),
-                title = {
-                    Text("Enter Name and NIM")
-                }
-            )
-        },
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -156,10 +146,10 @@ fun NameAndNimScreen(auth: FirebaseAuth, onLoginSuccess: () -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            NimField(
+            PasswordField(
                 icon = Icons.Filled.Info,
-                nim = nim,
-                onNimChanged = { if (it.all { char -> char.isDigit() }) nim = it }
+                password = password,
+                onPasswordChanged = { if (it.all { char -> char.isDigit() }) password = it }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -169,7 +159,7 @@ fun NameAndNimScreen(auth: FirebaseAuth, onLoginSuccess: () -> Unit) {
             Button(
                 onClick = {
                     if (isFormValid) {
-                        auth.signInWithEmailAndPassword(name + "@student.ub.ac.id", nim)
+                        auth.signInWithEmailAndPassword(name + "@student.ub.ac.id", password)
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
                                     onLoginSuccess()
@@ -211,10 +201,10 @@ fun NameField(icon: ImageVector, onNameChanged: (String) -> Unit) {
 }
 
 @Composable
-fun NimField(icon: ImageVector, nim: String, onNimChanged: (String) -> Unit) {
+fun PasswordField(icon: ImageVector, password: String, onPasswordChanged: (String) -> Unit) {
     TextField(
-        value = nim,
-        onValueChange = onNimChanged,
+        value = password,
+        onValueChange = onPasswordChanged,
         label = { Text("Enter Password") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         leadingIcon = { Icon(imageVector = icon, contentDescription = "Password Icon") }
