@@ -23,16 +23,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".ListActivity"
-            android:exported="false"
-            android:label="List Activity"
-            />
-        <activity
-            android:name=".ProfileActivity"
-            android:exported="false"
-            android:label="Profile Activity"
-            />
     </application>
 
 </manifest>

@@ -7,44 +7,36 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import android.content.Intent
+import android.util.Log
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.example.praktikumpapb.navigation.NavigationItem
+import com.example.praktikumpapb.navigation.Screen
+import com.example.praktikumpapb.screen.MatkulListScreen
+import com.example.praktikumpapb.screen.ProfileScreen
+import com.example.praktikumpapb.screen.TugasScreen
+import com.example.praktikumpapb.ui.theme.PraktikumPAPBTheme
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
-import android.util.Log
-import com.example.praktikumpapb.ui.theme.PraktikumPAPBTheme
 
 class MainActivity : ComponentActivity() {
     private lateinit var auth: FirebaseAuth
@@ -56,22 +48,86 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PraktikumPAPBTheme {
-                NameAndNimScreen(auth)
+                var isLoggedIn by remember { mutableStateOf(false) }
+
+                if (!isLoggedIn) {
+                    NameAndNimScreen(auth) { isLoggedIn = true }
+                } else {
+                    MainScreen()
+                }
             }
+        }
+    }
+}
+
+@Composable
+fun MainScreen() {
+    val navController = rememberNavController()
+    val navigationItems = listOf(
+        NavigationItem(
+            title = "Matkul",
+            icon = Icons.Default.Info,
+            screen = Screen.Matkul
+        ),
+        NavigationItem(
+            title = "Tugas",
+            icon = Icons.Default.Favorite,
+            screen = Screen.Tugas,
+        ),
+        NavigationItem(
+            title = "Profile",
+            icon = Icons.Default.Person,
+            screen = Screen.Profile
+        )
+    )
+
+    Scaffold(
+        bottomBar = { BottomNavigationBar(navController, navigationItems) }
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = Screen.Matkul.route,
+            modifier = Modifier.padding(innerPadding)
+        ) {
+            composable(Screen.Matkul.route) { MatkulListScreen() }
+            composable(Screen.Tugas.route) { TugasScreen() }
+            composable(Screen.Profile.route) { ProfileScreen() }
+        }
+    }
+}
+
+@Composable
+fun BottomNavigationBar(
+    navController: NavHostController,
+    items: List<NavigationItem>
+) {
+    NavigationBar {
+        val navBackStackEntry by navController.currentBackStackEntryAsState()
+        val currentRoute = navBackStackEntry?.destination?.route
+
+        items.forEach { item ->
+            NavigationBarItem(
+                icon = { Icon(item.icon, contentDescription = item.title) },
+                label = { Text(item.title) },
+                selected = currentRoute == item.screen.route,
+                onClick = {
+                    navController.navigate(item.screen.route) {
+                        popUpTo(navController.graph.startDestinationId)
+                        launchSingleTop = true
+                    }
+                }
+            )
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun NameAndNimScreen(auth: FirebaseAuth) {
+fun NameAndNimScreen(auth: FirebaseAuth, onLoginSuccess: () -> Unit) {
     var name by remember { mutableStateOf("") }
-    var submittedNim by remember { mutableStateOf("") }
     var nim by remember { mutableStateOf("") }
     val context = LocalContext.current
-
-    // Button enabled state based on validation
-    val isFormValid = name.isNotEmpty() && nim.length == 15
+    val isFormValid = name.isNotEmpty() && nim.length == 6
 
     Scaffold(
         topBar = {
@@ -108,41 +164,16 @@ fun NameAndNimScreen(auth: FirebaseAuth) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text("Submitted NIM: $submittedNim")
-
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Preview Button
-            Surface(
-                modifier = Modifier
-                    .padding(vertical = 8.dp)
-                    .combinedClickable(
-                        onClick = { /* Do nothing on regular click */ },
-                        onLongClick = {
-                            Toast.makeText(context, "Preview - Name: $name, NIM: $nim", Toast.LENGTH_SHORT).show()
-                        }
-                    ),
-                color = MaterialTheme.colorScheme.primary
-            ) {
-                Text(
-                    text = "Preview (Long Press)",
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-
-            // Submit Button
             Button(
                 onClick = {
-                    if (name.isNotEmpty() && nim.length == 15) { // Validasi sederhana
-                        auth.signInWithEmailAndPassword(nim + "@student.ub.ac.id", nim)
+                    if (isFormValid) {
+                        auth.signInWithEmailAndPassword(name + "@student.ub.ac.id", nim)
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
-                                    // Sign in success, navigate to ListActivity
-                                    val intent = Intent(context, ListActivity::class.java)
-                                    context.startActivity(intent)
+                                    onLoginSuccess()
                                 } else {
-                                    // If sign in fails, display a message to the user.
                                     Log.w("MainActivity", "signInWithEmail:failure", task.exception)
                                     Toast.makeText(
                                         context,
@@ -152,16 +183,14 @@ fun NameAndNimScreen(auth: FirebaseAuth) {
                                 }
                             }
                     } else {
-                        Toast.makeText(context, "Please enter valid name and NIM.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Please enter valid name and password.", Toast.LENGTH_SHORT).show()
                     }
-
                 },
                 enabled = isFormValid,
                 modifier = Modifier.padding(vertical = 8.dp)
             ) {
-                Text("Submit")
+                Text("Login")
             }
-
         }
     }
 }
@@ -186,16 +215,8 @@ fun NimField(icon: ImageVector, nim: String, onNimChanged: (String) -> Unit) {
     TextField(
         value = nim,
         onValueChange = onNimChanged,
-        label = { Text("Enter NIM (15 digits)") },
+        label = { Text("Enter Password") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        leadingIcon = { Icon(imageVector = icon, contentDescription = "NIM Icon") }
+        leadingIcon = { Icon(imageVector = icon, contentDescription = "Password Icon") }
     )
 }
-
-//@Preview(showBackground = true)
-//@Composable
-//fun DefaultPreview() {
-//    PraktikumPAPBTheme {
-//        NameAndNimScreen()
-//    }
-//}

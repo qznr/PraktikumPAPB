@@ -1,8 +1,6 @@
-package com.example.praktikumpapb
+package com.example.praktikumpapb.screen
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
@@ -18,27 +16,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.praktikumpapb.R
 import com.example.praktikumpapb.entity.Github
 import com.example.praktikumpapb.retrofit.ApiConfig
-import com.example.praktikumpapb.ui.theme.PraktikumPAPBTheme
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
-
-class ProfileActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            PraktikumPAPBTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    ProfileScreen()
-                }
-            }
-        }
-    }
-}
 
 @Composable
 fun ProfileScreen() {
@@ -53,9 +35,12 @@ fun ProfileScreen() {
                 val response = ApiConfig.getApiService().getUser("qznr")
                 githubUser = response
             } catch (e: HttpException) {
-                // Handle error, e.g., show an error message
+                // Handle HTTP errors (e.g., API not available, unauthorized)
+                Log.e("ProfileScreen", "HTTP Exception: ${e.message}")
+                // Consider showing an error message to the user or retrying the request.
             } catch (e: Exception) {
-                // Handle other exceptions
+                // Handle other exceptions (e.g., network issues)
+                Log.e("ProfileScreen", "Exception: ${e.message}")
             } finally {
                 isLoading = false
             }
@@ -78,7 +63,7 @@ fun ProfileScreen() {
                     .data(githubUser?.avatarUrl)
                     .crossfade(true)
                     .build(),
-                placeholder = painterResource(R.drawable.ic_launcher_foreground),
+                placeholder = painterResource(R.drawable.ic_launcher_foreground), // Placeholder
                 contentDescription = "Profile Picture",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -88,9 +73,9 @@ fun ProfileScreen() {
 
             Spacer(Modifier.height(16.dp))
 
-            githubUser?.let { user ->
+            githubUser?.let { user ->  // Use let for null safety
                 DisplayField("Username", user.login)
-                DisplayField("Name", user.name ?: "")
+                DisplayField("Name", user.name ?: "") // Handle possibly null fields
                 DisplayField("Bio", user.bio ?: "")
                 DisplayField("Location", user.location ?: "")
                 DisplayField("Company", user.company ?: "")
@@ -98,16 +83,23 @@ fun ProfileScreen() {
                 DisplayField("Following", user.following.toString())
                 DisplayField("Public Repos", user.publicRepos.toString())
                 DisplayField("Public Gists", user.publicGists.toString())
-            }
 
+            }
         }
     }
 }
 
+
 @Composable
 fun DisplayField(label: String, value: String) {
-    Row {
-        Text("$label: ", fontWeight = FontWeight.Bold)
-        Text(value)
+    Row(
+        modifier = Modifier.padding(vertical = 4.dp) // Add some spacing
+    ) {
+        Text(
+            text = "$label: ",
+            fontWeight = FontWeight.Bold,
+            fontSize = 16.sp // Adjust font size as needed
+        )
+        Text(text = value, fontSize = 16.sp)
     }
 }
