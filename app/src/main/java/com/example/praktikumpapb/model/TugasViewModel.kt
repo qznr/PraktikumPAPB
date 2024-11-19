@@ -1,4 +1,4 @@
-package com.example.praktikumpapb
+package com.example.praktikumpapb.model
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel

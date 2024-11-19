@@ -23,7 +23,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import android.util.Log
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -52,7 +58,7 @@ class MainActivity : ComponentActivity() {
                 var isLoggedIn by remember { mutableStateOf(false) }
 
                 if (!isLoggedIn) {
-                    NameAndNimScreen(auth) { isLoggedIn = true }
+                    LoginScreen(auth) { isLoggedIn = true }
                 } else {
                     MainScreen()
                 }
@@ -61,6 +67,165 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LoginScreen(auth: FirebaseAuth, onLoginSuccess: () -> Unit) {
+    var name by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val isFormValid = name.isNotEmpty() && password.length == 6
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        // Gradient Circle Background
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(600.dp)
+                    .clip(CircleShape)
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                MaterialTheme.colorScheme.background
+                            )
+                        )
+                    )
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Welcome Message
+                Text(
+                    text = "Welcome Back!",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Text(
+                    text = "Please sign in to continue",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 32.dp)
+                )
+
+                // Login Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .padding(24.dp)
+                            .fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        CustomTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            label = "Email",
+                            icon = Icons.Filled.Person,
+                            keyboardType = KeyboardType.Email
+                        )
+
+                        CustomTextField(
+                            value = password,
+                            onValueChange = { if (it.all { char -> char.isDigit() }) password = it },
+                            label = "Password",
+                            icon = Icons.Filled.Lock,
+                            keyboardType = KeyboardType.NumberPassword,
+                            isPassword = true
+                        )
+
+                        Button(
+                            onClick = {
+                                if (isFormValid) {
+                                    auth.signInWithEmailAndPassword(name + "@student.ub.ac.id", password)
+                                        .addOnCompleteListener { task ->
+                                            if (task.isSuccessful) {
+                                                onLoginSuccess()
+                                            } else {
+                                                Log.w("MainActivity", "signInWithEmail:failure", task.exception)
+                                                Toast.makeText(
+                                                    context,
+                                                    "Authentication failed.",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }
+                                } else {
+                                    Toast.makeText(context, "Please enter valid credentials", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            enabled = isFormValid,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = "Sign In",
+                                modifier = Modifier.padding(vertical = 4.dp),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    icon: ImageVector,
+    keyboardType: KeyboardType,
+    isPassword: Boolean = false
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        leadingIcon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        singleLine = true,
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxWidth(),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+        )
+    )
+}
+
+// MainScreen and BottomNavigationBar components remain the same
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
@@ -120,93 +285,4 @@ fun BottomNavigationBar(
             )
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
-@Composable
-fun NameAndNimScreen(auth: FirebaseAuth, onLoginSuccess: () -> Unit) {
-    var name by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    val context = LocalContext.current
-    val isFormValid = name.isNotEmpty() && password.length == 6
-
-    Scaffold(
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            NameField(
-                icon = Icons.Filled.Person,
-                onNameChanged = { newName -> name = newName }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            PasswordField(
-                icon = Icons.Filled.Info,
-                password = password,
-                onPasswordChanged = { if (it.all { char -> char.isDigit() }) password = it }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Button(
-                onClick = {
-                    if (isFormValid) {
-                        auth.signInWithEmailAndPassword(name + "@student.ub.ac.id", password)
-                            .addOnCompleteListener { task ->
-                                if (task.isSuccessful) {
-                                    onLoginSuccess()
-                                } else {
-                                    Log.w("MainActivity", "signInWithEmail:failure", task.exception)
-                                    Toast.makeText(
-                                        context,
-                                        "Authentication failed.",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            }
-                    } else {
-                        Toast.makeText(context, "Please enter valid name and password.", Toast.LENGTH_SHORT).show()
-                    }
-                },
-                enabled = isFormValid,
-                modifier = Modifier.padding(vertical = 8.dp)
-            ) {
-                Text("Login")
-            }
-        }
-    }
-}
-
-@Composable
-fun NameField(icon: ImageVector, onNameChanged: (String) -> Unit) {
-    var name by remember { mutableStateOf("") }
-
-    TextField(
-        value = name,
-        onValueChange = {
-            name = it
-            onNameChanged(it)
-        },
-        label = { Text("Enter your name") },
-        leadingIcon = { Icon(imageVector = icon, contentDescription = "Name Icon") }
-    )
-}
-
-@Composable
-fun PasswordField(icon: ImageVector, password: String, onPasswordChanged: (String) -> Unit) {
-    TextField(
-        value = password,
-        onValueChange = onPasswordChanged,
-        label = { Text("Enter Password") },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        leadingIcon = { Icon(imageVector = icon, contentDescription = "Password Icon") }
-    )
 }

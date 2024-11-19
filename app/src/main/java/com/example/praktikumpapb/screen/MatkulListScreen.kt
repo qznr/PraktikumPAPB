@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.praktikumpapb.entity.Matkul
 import com.google.firebase.firestore.ktx.firestore
@@ -22,14 +23,22 @@ fun MatkulListScreen() {
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    Scaffold { innerPadding ->
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .padding(innerPadding)
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .fillMaxSize()
         ) {
+            // Header
+            Text(
+                text = "Daftar Mata Kuliah",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(16.dp)
+            )
 
             LaunchedEffect(Unit) {
                 isLoading = true
@@ -38,8 +47,7 @@ fun MatkulListScreen() {
                     .addOnSuccessListener { result ->
                         Log.d("Firestore", "Successfully fetched documents: ${result.size()}")
                         if (result.isEmpty) {
-                            Log.d("Firestore", "No documents found in 'matkul' collection")
-                            errorMessage = "No documents found in 'matkul' collection"
+                            errorMessage = "Tidak ada mata kuliah yang ditemukan"
                         } else {
                             matkulList = result.documents.mapNotNull { document ->
                                 try {
@@ -60,27 +68,38 @@ fun MatkulListScreen() {
                     }
                     .addOnFailureListener { exception ->
                         Log.e("Firestore", "Error fetching documents: ${exception.message}")
-                        errorMessage = "Error fetching documents: ${exception.message}"
-                        matkulList = emptyList() // Show empty list on error
+                        errorMessage = "Gagal mengambil data: ${exception.message}"
+                        matkulList = emptyList()
                         isLoading = false
                     }
             }
 
-
-            // Display the list or loading/error state
-            Column(
+            Box(
                 modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                contentAlignment = Alignment.Center
             ) {
-                if (isLoading) {
-                    CircularProgressIndicator()
-                } else if (matkulList == null || matkulList!!.isEmpty()) {
-                    Text(errorMessage ?: "No data found")
-                } else {
-                    LazyColumn {
-                        items(matkulList!!) { matkul ->
-                            OutlinedCardExample(matkul)
+                when {
+                    isLoading -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(48.dp),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    matkulList == null || matkulList!!.isEmpty() -> {
+                        Text(
+                            text = errorMessage ?: "Tidak ada data",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                    else -> {
+                        LazyColumn(
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(matkulList!!) { matkul ->
+                                MatkulCard(matkul)
+                            }
                         }
                     }
                 }
@@ -90,27 +109,65 @@ fun MatkulListScreen() {
 }
 
 @Composable
-fun OutlinedCardExample(matkul: Matkul) {
+fun MatkulCard(matkul: Matkul) {
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
-        border = BorderStroke(1.dp, Color.Black),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)),
         modifier = Modifier
-            .padding(16.dp)
             .fillMaxWidth()
-            .wrapContentHeight()
+            .wrapContentHeight(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = "Mata Kuliah: ${matkul.matkul}", style = MaterialTheme.typography.headlineSmall)
-            Text(text = "Hari: ${matkul.hari}")
-            Text(text = "Jam Mulai: ${matkul.jam_mulai}")
-            Text(text = "Ruang: ${matkul.ruang}")
-            if (matkul.praktikum) {
-                Text(text = "Praktikum: Ya")
-            } else {
-                Text(text = "Praktikum: Tidak")
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = matkul.matkul,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    InfoRow("Hari", matkul.hari)
+                    InfoRow("Jam", matkul.jam_mulai)
+                }
+                Column {
+                    InfoRow("Ruang", matkul.ruang)
+                    Text(
+                        text = if (matkul.praktikum) "✓ Praktikum" else "✗ Teori",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (matkul.praktikum)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.secondary
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = "$label:",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium
+        )
     }
 }
